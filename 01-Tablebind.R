@@ -1,7 +1,7 @@
 install.packages("dtplyr")
 require(dtplyr)
 #Again, this directory is my own 
-directory <- "~/SREP LAB/R Recoding/Downloaded Data/ri_table_list.RDS"
+directory <- "./Downloaded Data/ri_table_list.rds"
 ri_table_list <- readRDS(directory)
 
 index10 <- ri_table_list %>% 
