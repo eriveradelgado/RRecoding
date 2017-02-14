@@ -4,7 +4,7 @@
 
 require(xml2)  # Import XML files
 require(tidyverse) # Collection of tidy data analysis workflow libraries
-
+require(rvest)
 # Access Rekharsky and Inoue's paper in ACS Chemical Reviews 1998
 # and save page as HTML to the project working directory.
 # URL: http://pubs.acs.org/doi/full/10.1021/cr970015o. *Paper behind paywall
