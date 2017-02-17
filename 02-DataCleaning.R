@@ -6,15 +6,20 @@ require(plyr)
 require(taRifx)
 require(stringr)
 require(tidyr)
-ri_bound <- readRDS(file = "~/SREP LAB/R Recoding/Bound Data/ri_boundDF.RDS")
-setnames(ri_bound, c(6:8, 11), c("DelG", "DelH", "TDelS", "DelCp"))
+ri_bound <- readRDS(file = "./Output Data/01-ri_boundDF.rds")
+
+ri_bound <- ri_bound %>%
+  rename(DelG = `ΔG°/ kJ mol-1`, 
+       DelH =`ΔH°/ kJ mol-1`,
+       TDelS = `TΔS°/ kJ mol-1`,
+       DelCp = `ΔCp°/ J mol-1 K-1`)
 
 
 # Splitting columns containing a variable value and its uncertainty
 #Fixed the separator -AX
 ri_clean <- ri_bound %>%
         separate(solvent, c("solvent","solvent.specs"),
-                 sep = "\\s+\\(", extra = "merge") %>%
+                 sep = "(?=\\s*\\()", extra = "merge") %>%select(solvent.specs) %>% unique() %>% View()
         separate(log.K, c("log.K", "log.K.Uncertainty"), 
                  sep = "\\s\\?\\s", extra = "merge") %>%
         separate(DelG, c("DelG", "DelG.Uncertainty"),
@@ -28,6 +33,7 @@ ri_clean <- ri_bound %>%
         lapply(str_replace_all, pattern = "\\s+", replacement = " ") %>%
         lapply(str_replace_all, pattern = "·", replacement = " ") %>% 
                        as.data.frame()
+
 #SREP LAB is my own personal file
 dir.create(path = "~/SREP LAB/R Recoding/Cleaned Data")
 saveRDS(object = ri_clean, file = "~/SREP LAB/R Recoding/Cleaned Data/ri_clean.RDS")
