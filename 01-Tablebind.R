@@ -81,7 +81,7 @@ ri_table_list %>%
   select(-contains_host, -contains_10col) %>%
   unnest() -> ri_10and11col_allhost
 
-
+# Saving efforts to file
 save(ri_10and11col_allhost, file = "./Output Data/01-ri_boundDF.RData")
 saveRDS(ri_10and11col_allhost, file = "./Output Data/01-ri_boundDF.rds")
 save(delThermPararm_delAlk, file = "./Output Data/01.2-delThermodynamicParameter_delCcontent.RData")
