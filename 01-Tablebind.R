@@ -1,42 +1,90 @@
 require(tidyverse)
 
-directory <- "./Downloaded Data/ri_table_list.rds"
+directory <- "./Output Data/00-ri_table_list.rds"
 ri_table_list <- readRDS(directory)
 
-ri_10col_allhost<- function(x){
-  name_containshost <- lapply(x, function(x) names(x)[1]) == "host"
-  index10 <- sapply(x, function(x) length(names(x))) == 10
-  index <- index10 == name_containshost
-  return(index)
-  }
-  
-index10 <- ri_table_list %>% 
-  lapply(names) %>% 
-  lapply(length) == 10
+# Cleaning HTML import prior to binding due to:
+# (1) Ref Column in list entry 26 is an integer when Ref columns in other 
+#     list entries are integer
 
-index_10col_allhost <- ri_10col_allhost(ri_table_list)
+ri_table_list[[26]][11] <- ri_table_list[[26]][11] %>% map(as.character)
 
-index11 <-  ri_table_list %>% 
-  lapply(names) %>% 
-  lapply(length) == 11 %>% 
-  as.vector()
+# (2) Some list entries are actually table entries that were imported as empty
+#     table names
 
-index_observationascolname <- ri_table
-ri_delcp <- rbindlist(ri_table_list[index11]) %>%
-  lapply(as.character) %>%
-  as.data.frame(stringsAsFactors = FALSE)
+# (2.1) List table 14 is missing the log K value
+ri_table_list[[14]] <- ri_table_list[[14]] %>% names() %>% data_frame(entries =. ) %>%
+  mutate(key = c("host",
+                 "guest",
+                 "solvent",
+                 "T/K",
+                 "ΔG°/ kJ mol-1",
+                 "ΔH°/ kJ mol-1",
+                 "TΔS°/ kJ mol-1",
+                 "methoda" ,
+                 "ref")) %>% 
+  spread(key = key, value = entries) %>%
+  mutate("T/K" = as.integer(`T/K`),
+         "log K" = "NA")
 
-ri_delcp  <- ri_delcp[ , c(1:8, 10, 11, 9)]
+# (2.2) List table 17 is missing its reference (Likely to be reference  
+# 242 since all other 5-methoxyresorcinol are from reference 242)
+ri_table_list[[17]] <- ri_table_list[[17]] %>% 
+  names() %>% 
+  data_frame(entries =. ) %>%
+  mutate(key = c("host",
+         "guest",
+         "solvent",
+         "T/K",
+         "log K",
+         "ΔG°/ kJ mol-1",
+         "ΔH°/ kJ mol-1",
+         "TΔS°/ kJ mol-1",
+         "methoda")) %>%
+  spread(key = key, value = entries) %>%
+  mutate("T/K" = as.integer(`T/K`),
+         ref = "NA")
 
-ri_nodelcp  <- rbindlist(ri_table_list[index10]) %>% 
-  lapply(as.character) %>% 
-  as.data.frame(stringsAsFactors = F) 
+# (2.3) List table 21 is missing the log K value
+ri_table_list[[21]] <- ri_table_list[[21]] %>%
+  names() %>% 
+  data_frame(entries =. ) %>%
+  mutate(key = c("host",
+                 "guest",
+                 "solvent",
+                 "T/K",
+                 "ΔG°/ kJ mol-1",
+                 "ΔH°/ kJ mol-1",
+                 "TΔS°/ kJ mol-1",
+                 "methoda" ,
+                 "ref")) %>% 
+  spread(key = key, value = entries) %>%
+  mutate("T/K" = as.integer(`T/K`),
+         "log K" = "NA")
 
-ri_observation_ascolname <- 
-ri_nodelcp[ , 11] <- NA
+# (3) Remove the summary output from the linear regression and save into its own
+# data frame
 
-ri_boundDF <- rbindlist(list(ri_delcp, ri_nodelcp))
-dir.create("~/SREP LAB/R Recoding/Bound Data")
+delThermPararm_delAlk<- ri_table_list[[28]] 
 
-save(ri_boundDF, file = "~/SREP LAB/R Recoding/Bound Data/ri_boundDF.RData")
-saveRDS(ri_boundDF, file = "~/SREP LAB/R Recoding/Bound Data/ri_boundDF.rds")
+summary_table <- ri_table_list[[29]]
+
+ri_table_list[[29]] <- NULL
+ri_table_list[[28]] <- NULL
+
+ri_table_list %>%
+  tibble() %>%
+  mutate(contains_host = . %>% map(names) %>% map(`[`, 1) == "host",
+         contains_10col = . %>% map(names) %>% map(length)== 10|11) %>%
+  filter(contains_10col == T) %>%
+  filter(contains_host == T) %>%
+  select(-contains_host, -contains_10col) %>%
+  unnest() -> ri_10and11col_allhost
+
+
+save(ri_10and11col_allhost, file = "./Output Data/01-ri_boundDF.RData")
+saveRDS(ri_10and11col_allhost, file = "./Output Data/01-ri_boundDF.rds")
+save(delThermPararm_delAlk, file = "./Output Data/01.2-delThermodynamicParameter_delCcontent.RData")
+saveRDS(delThermPararm_delAlk, file = "./Output Data/01.2-delThermodynamicParameter_delCcontent.rds")
+save(summary_table, file = "./Output Data/01.3-DifferentCyclodextrins_SummaryTable.RData")
+save(summary_table, file = "./Output Data/01.3-DifferentCyclodextrins_SummaryTable.rds")
