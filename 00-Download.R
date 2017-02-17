@@ -13,8 +13,10 @@ file <- "./Downloaded Data/Complexation Thermodynamics of Cyclodextrins - Chemic
 read_html(file) %>%
   html_table(header = T) -> ri_table_list 
 
-save(ri_table_list, file = "./Downloaded Data/ri_table_list.RData")
-saveRDS(ri_table_list, file = "./Downloaded Data/ri_table_list.rds")
+dir.create("./Output Data")
+
+save(ri_table_list, file = "./Output Data/00-ri_table_list.RData")
+saveRDS(ri_table_list, file = "./Output Data/00-ri_table_list.rds")
 
 
 
