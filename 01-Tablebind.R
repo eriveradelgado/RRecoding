@@ -13,7 +13,9 @@ ri_table_list[[26]][11] <- ri_table_list[[26]][11] %>% map(as.character)
 #     table names
 
 # (2.1) List table 14 is missing the log K value
-ri_table_list[[14]] <- ri_table_list[[14]] %>% names() %>% data_frame(entries =. ) %>%
+ri_table_list[[14]] <- ri_table_list[[14]] %>% 
+  names() %>% 
+  data_frame(entries =. ) %>%
   mutate(key = c("host",
                  "guest",
                  "solvent",
