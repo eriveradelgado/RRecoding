@@ -1,19 +1,27 @@
-install.packages("dtplyr")
-require(dtplyr)
-#Again, this directory is my own 
+require(tidyverse)
+
 directory <- "./Downloaded Data/ri_table_list.rds"
 ri_table_list <- readRDS(directory)
 
+ri_10col_allhost<- function(x){
+  name_containshost <- lapply(x, function(x) names(x)[1]) == "host"
+  index10 <- sapply(x, function(x) length(names(x))) == 10
+  index <- index10 == name_containshost
+  return(index)
+  }
+  
 index10 <- ri_table_list %>% 
   lapply(names) %>% 
-  lapply(length) == 10 %>% 
-  as.vector()
+  lapply(length) == 10
+
+index_10col_allhost <- ri_10col_allhost(ri_table_list)
 
 index11 <-  ri_table_list %>% 
   lapply(names) %>% 
   lapply(length) == 11 %>% 
   as.vector()
 
+index_observationascolname <- ri_table
 ri_delcp <- rbindlist(ri_table_list[index11]) %>%
   lapply(as.character) %>%
   as.data.frame(stringsAsFactors = FALSE)
@@ -24,10 +32,11 @@ ri_nodelcp  <- rbindlist(ri_table_list[index10]) %>%
   lapply(as.character) %>% 
   as.data.frame(stringsAsFactors = F) 
 
+ri_observation_ascolname <- 
 ri_nodelcp[ , 11] <- NA
 
 ri_boundDF <- rbindlist(list(ri_delcp, ri_nodelcp))
 dir.create("~/SREP LAB/R Recoding/Bound Data")
 
 save(ri_boundDF, file = "~/SREP LAB/R Recoding/Bound Data/ri_boundDF.RData")
-saveRDS(ri_boundDF, file = "~/SREP LAB/R Recoding/Bound Data/ri_boundDF.RDS")
+saveRDS(ri_boundDF, file = "~/SREP LAB/R Recoding/Bound Data/ri_boundDF.rds")
