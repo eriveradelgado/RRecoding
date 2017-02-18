@@ -19,11 +19,7 @@ ri_bound <- ri_bound %>%
 #Fixed the separator -AX
 ri_clean <- ri_bound %>%
         separate(solvent, c("solvent","solvent.specs"),
-<<<<<<< HEAD
                  sep = "(?=\\s*\\()", extra = "merge") %>%
-=======
-                 sep = "(?=\\s*\\()", extra = "merge") %>%select(solvent.specs) %>% unique() %>% View()
->>>>>>> 8b0425472c60a8c5165d37359915ec9f4092279e
         separate(log.K, c("log.K", "log.K.Uncertainty"), 
                  sep = "\\s\\?\\s", extra = "merge") %>%
         separate(DelG, c("DelG", "DelG.Uncertainty"),
