@@ -6,45 +6,50 @@ require(plyr)
 require(taRifx)
 require(stringr)
 require(tidyr)
+require(stringr)
 ri_bound <- readRDS(file = "./Output Data/01-ri_boundDF.rds")
 
 ri_bound <- ri_bound %>%
   rename(DelG = `ΔG°/ kJ mol-1`, 
        DelH =`ΔH°/ kJ mol-1`,
        TDelS = `TΔS°/ kJ mol-1`,
-       DelCp = `ΔCp°/ J mol-1 K-1`)
+       DelCp = `ΔCp°/ J mol-1 K-1`,
+       log.K = `log K`)
 
 
 # Splitting columns containing a variable value and its uncertainty
 #Fixed the separator -AX
-ri_clean <- ri_bound %>%
+ri_clean <- ri_bound %>% 
         separate(solvent, c("solvent","solvent.specs"),
-                 sep = "(?=\\s*\\()", extra = "merge") %>%
+                 sep = "(?=\\s*\\()", extra = "merge", fill = "right") %>% 
         separate(log.K, c("log.K", "log.K.Uncertainty"), 
-                 sep = "\\s\\?\\s", extra = "merge") %>%
+                 sep = "\\s\\±\\s", extra = "merge", fill = "right") %>% 
         separate(DelG, c("DelG", "DelG.Uncertainty"),
-                 sep = "\\s\\?\\s",extra = "merge") %>%
+                 sep = "\\s\\±\\s",extra = "merge", fill = "right") %>%
         separate(DelH, c("DelH", "DelH.Uncertainty"),
-                 sep = "\\s\\?\\s", extra = "merge") %>%
+                 sep = "\\s\\±\\s", extra = "merge", fill = "right") %>%
         separate(TDelS, c("TDelS", "TDelS.Uncertainty"), 
-                 sep = "\\s\\?\\s",extra = "merge") %>% 
-        lapply(str_replace_all, pattern = "\\−", replacement = "-") %>%
-        lapply(str_replace_all, pattern = "\\ +", replacement = " ") %>%
-        lapply(str_replace_all, pattern = "\\s+", replacement = " ") %>%
-        lapply(str_replace_all, pattern = "·", replacement = " ") %>% 
-                       as.data.frame()
+                 sep = "\\s\\±\\s",extra = "merge", fill = "right") %>%
+        separate(DelCp, c("DelCp", "DelCp.Uncertainty"), 
+                 sep = "\\s\\±\\s",extra = "merge", fill = "right") %>%
+         lapply(str_replace_all, pattern = "\\−", replacement = "-") %>%
+         lapply(str_replace_all, pattern = "\\ +", replacement = " ") %>%
+         lapply(str_replace_all, pattern = "\\s+", replacement = " ") %>%
+         lapply(str_replace_all, pattern = "·", replacement = " ") %>%
+         as_tibble()
+                       
 
 #SREP LAB is my own personal file
 dir.create(path = "~/SREP LAB/R Recoding/Cleaned Data")
 saveRDS(object = ri_clean, file = "~/SREP LAB/R Recoding/Cleaned Data/ri_clean.RDS")
 save(ri_clean, file = "~/SREP LAB/R Recoding/Cleaned Data/ri_clean.RData")
 #=============================================================================== 
-#                       "Variable Engineering"                                 =
+#                 "Variable Engineering or Imputation"                         =
 #===============================================================================
 # Remove pH string and \\) to convert the pH Column to numerical. Assume that 
-# columns with no value have a pH of 7.0 pH values with a range of 
+# columns with no value have a pH of 7.0. pH values with a range of 
 # phValue1-phValue2 will be assigned an average pH value ((phValue1+phValue2)/2)
-# ph's with an inequality (<,>) will be set at the value given guests with 
+# ph's with an inequality (<,>) will be set at the value given. Guests with 
 # the molarity of the acid given in the solvent composition will be set
 # at the theoretical value of the solution
 
