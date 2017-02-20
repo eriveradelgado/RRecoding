@@ -10,42 +10,9 @@ ri_table_list <- readRDS(directory)
 ri_table_list[[26]][11] <- ri_table_list[[26]][11] %>% map(as.character)
 
 # (2) Some list entries are actually table entries that were imported as empty
-#     table names
-
-# (2.1) List table 14 is missing the log K value
-ri_table_list[[14]] <- ri_table_list[[14]] %>% 
-  names() %>% 
-  data_frame(entries =. ) %>%
-  mutate(key = c("host",
-                 "guest",
-                 "solvent",
-                 "T/K",
-                 "ΔG°/ kJ mol-1",
-                 "ΔH°/ kJ mol-1",
-                 "TΔS°/ kJ mol-1",
-                 "methoda" ,
-                 "ref")) %>% 
-  spread(key = key, value = entries) %>%
-  mutate("T/K" = as.integer(`T/K`),
-         "log K" = "NA")
-
-# (2.2) List table 17 is missing its reference (Likely to be reference  
-# 242 since all other 5-methoxyresorcinol are from reference 242)
-ri_table_list[[17]] <- ri_table_list[[17]] %>% 
-  names() %>% 
-  data_frame(entries =. ) %>%
-  mutate(key = c("host",
-         "guest",
-         "solvent",
-         "T/K",
-         "log K",
-         "ΔG°/ kJ mol-1",
-         "ΔH°/ kJ mol-1",
-         "TΔS°/ kJ mol-1",
-         "methoda")) %>%
-  spread(key = key, value = entries) %>%
-  mutate("T/K" = as.integer(`T/K`),
-         ref = "NA")
+#     table names. When removing elements of a list or reassigning start from 
+#     last element of the list back to the first. (*There ought to be a safer
+#     method to remove these type of cases)
 
 # (2.3) List table 21 is missing the log K value
 ri_table_list[[21]] <- ri_table_list[[21]] %>%
@@ -64,10 +31,49 @@ ri_table_list[[21]] <- ri_table_list[[21]] %>%
   mutate("T/K" = as.integer(`T/K`),
          "log K" = "NA")
 
+
+# (2.2) List table 17 is missing its reference (Likely to be reference  
+# 242 since all other 5-methoxyresorcinol are from reference 242)
+ri_table_list[[17]] <- ri_table_list[[17]] %>% 
+  names() %>% 
+  data_frame(entries =. ) %>%
+  mutate(key = c("host",
+                 "guest",
+                 "solvent",
+                 "T/K",
+                 "log K",
+                 "ΔG°/ kJ mol-1",
+                 "ΔH°/ kJ mol-1",
+                 "TΔS°/ kJ mol-1",
+                 "methoda")) %>%
+  spread(key = key, value = entries) %>%
+  mutate("T/K" = as.integer(`T/K`),
+         ref = "NA")
+
+# (2.1) List table 14 is missing the log K value
+ri_table_list[[14]] <- ri_table_list[[14]] %>% 
+  names() %>% 
+  data_frame(entries =. ) %>%
+  mutate(key = c("host",
+                 "guest",
+                 "solvent",
+                 "T/K",
+                 "ΔG°/ kJ mol-1",
+                 "ΔH°/ kJ mol-1",
+                 "TΔS°/ kJ mol-1",
+                 "methoda" ,
+                 "ref")) %>% 
+  spread(key = key, value = entries) %>%
+  mutate("T/K" = as.integer(`T/K`),
+         "log K" = "NA")
+
+
+
+
 # (3) Remove the summary output from the linear regression and save into its own
 # data frame
 
-delThermPararm_delAlk<- ri_table_list[[28]] 
+delThermPararm_delAlk <- ri_table_list[[28]] 
 
 summary_table <- ri_table_list[[29]]
 
@@ -76,11 +82,11 @@ ri_table_list[[28]] <- NULL
 
 ri_table_list %>%
   tibble() %>%
-  mutate(contains_host = . %>% map(names) %>% map(`[`, 1) == "host",
-         contains_10col = . %>% map(names) %>% map(length)== 10|11) %>%
-  filter(contains_10col == T) %>%
-  filter(contains_host == T) %>%
-  select(-contains_host, -contains_10col) %>%
+  # mutate(contains_host = . %>% map(names) %>% map(`[`, 1) == "host",
+  #        contains_10col = . %>% map(names) %>% map(length)== 10|11) %>% View()
+  # filter(contains_10col == T) %>%
+  # filter(contains_host == T) %>%
+  # select(-contains_host, -contains_10col) %>%
   unnest() -> ri_10and11col_allhost
 
 # Saving efforts to file
