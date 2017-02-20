@@ -1,9 +1,7 @@
 #I did reformatting throughout the entire code
 #Trouble shooting will be indicated by comments -AX
-require(data.table)
+
 require(dplyr)
-require(plyr)
-require(taRifx)
 require(stringr)
 require(tidyr)
 require(stringr)
@@ -37,12 +35,11 @@ ri_clean <- ri_bound %>%
          lapply(str_replace_all, pattern = "\\s+", replacement = " ") %>%
          lapply(str_replace_all, pattern = "·", replacement = " ") %>%
          as_tibble()
+         
+      
                        
 
-#SREP LAB is my own personal file
-dir.create(path = "~/SREP LAB/R Recoding/Cleaned Data")
-saveRDS(object = ri_clean, file = "~/SREP LAB/R Recoding/Cleaned Data/ri_clean.RDS")
-save(ri_clean, file = "~/SREP LAB/R Recoding/Cleaned Data/ri_clean.RData")
+
 #=============================================================================== 
 #                 "Variable Engineering or Imputation"                         =
 #===============================================================================
@@ -53,73 +50,71 @@ save(ri_clean, file = "~/SREP LAB/R Recoding/Cleaned Data/ri_clean.RData")
 # the molarity of the acid given in the solvent composition will be set
 # at the theoretical value of the solution
 
+pattern.molarity <- gsub("\n", replacement = "", x = "(([0-9]*\\.*[0-9]*\\s+[M]
+\\s+[A-Za-z]*[A-Za-z0-9]*\\s*[a-z]*)(\\;*\\,*\\+*\\s+[0-9]+\\.*[0-9]*\\s+[M]
+\\s+[A-Za-z]*[A-Za-z0-9]*[a-z]*)*)")
 
-# Solvent Composition Pattern extraction (Ratios and Molarity)
-pattern1 <- gsub("\n", replacement = "", x = "([0-9]+\\.*[0-9]*\\:[0-9]+
-\\.*[0-9]*)|(([0-9]*\\.*[0-9]*\\s+[M]\\s+[A-Za-z]*[A-Za-z0-9]*
-\\s*[a-z]*)(\\;*\\,*\\+*\\s+[0-9]+\\.*[0-9]*\\s+[M]\\s+[A-Za-z]*
-[A-Za-z0-9]*[a-z]*)*)")
+pH.numeric <-  "[0-9]+\\.*[0-9]*"
 
-regex.solvent <- str_extract(ri_clean$solvent.specs,pattern1)
+ri_clean <- ri_clean %>% 
+  mutate(ref.notes= str_extract(ref, pattern = "[:alpha:]"),
+         ref = str_extract(ref, pattern = "\\d+(\\,\\s\\d+)*"),
+         pH = str_extract(solvent.specs, pattern = "(pH\\s(\\<\\s)*[0-9]+(\\.[0-9]+)*)"),
+         pH.range = str_extract(solvent.specs, pattern = "pH\\s[0-9]+\\.[0-9]+\\-[0-9]+(\\.[0-9]+)*"),
+         ratio = str_extract(solvent.specs, pattern = "[0-9]+(\\.[0-9]+)*\\:[0-9]+(\\.[0-9]+)*"),
+         solvent.molarity = str_extract(solvent.specs, pattern = pattern.molarity)) %>%
+  mutate(pH = ifelse(!is.na(pH.range), NA, pH)) %>%
+  mutate(pH = str_extract(pH, pattern = pH.numeric)%>% as.numeric())%>%
+  separate(., pH.range, c("pH1", "pH2"), sep = "-") %>%
+  mutate(pH1 = str_extract(pH1, pattern = pH.numeric) %>% as.numeric(),
+         pH2 = as.numeric(pH2)) %>%
+  mutate(pH = ifelse(!is.na(pH1), (pH1+pH2)/2, pH)) %>%
+  mutate(pH = ifelse(is.na(pH), 7.0, pH))%>%
+  select(-pH1, -pH2) 
+
+
 
 # pattern 2 and pattern 3 extract the numeric ph values from solvent composition 
 #the \u2212 is the unicode for a "minus" sign, different from the keyboard default hyphen -AX
 #putting a regular dash in the code cuts off some entries -AX
 #Also summarized the regex a bit -AX
-pattern2 <-  "pH\\s\\<*\\>*\\s*[0-9\\.]+\u2212*[0-9\\.]*"
-pattern3 <- "[0-9\\.]+\u2212*[0-9\\.]*"
- 
-regex.pH <- ri_clean$solvent.specs %>%
-  str_extract(pattern2)%>%
-  str_extract(pattern3)
-
-ph.range <- grep(pattern = "\u2212", x = regex.pH)
-
-ph.average <- strsplit(regex.pH[ph.range], split = "\u2212") %>%
-        ldply() %>% 
-        transform(V1 = as.numeric(V1), V2 = as.numeric(V2)) %>% 
-        rowMeans()
-
-regex.pH[ph.range]      <- ph.average
-regex.pH                <- as.numeric(regex.pH)
-naindex                 <- is.na(regex.pH)
-regex.pH[naindex]       <- 7.0
 
 
-
-ri_clean <- tbl_df(ri_clean)%>%
-        bind_cols(data_frame(regex.pH, regex.solvent))%>%
-        setnames(c(17, 18), c("pH", "solvent.composition"))%>%
-        select(1:4, 18, 17, 5:16)
 
 # Setting pH to acidic value when the solution contained an acid
 sulfuric_acid <- grep(pattern = "[M]+\\s+\\bH2SO4\\b", 
                       x = ri_clean$solvent.specs)
+
 hcl_acid <- grep(pattern = "M+\\s+\\bHCl\\b", 
                  x = ri_clean$solvent.specs)
+
 ri_clean$pH[sulfuric_acid] <- 1
 ri_clean$pH[hcl_acid]  <-  1.21
 
+
+# It could be nice to explain what each of these cleanup step is actually doing
+# to guest. I did a quick search in google and was able to find many of the
+# structures without modifying the original name
 ri_engineered <- ri_clean %>%
   mutate(clean.guest = str_replace_all(
     string = guest,
     pattern = "\\·+\\s*[A-Z]*[a-z]*",
     replacement = ""
-  )) %>%
-  transmute(
-    clean.guest = str_replace_all(
-      string = clean.guest,
-      pattern = "\\([di]*[mono]*anion\\)",
-      replacement = ""
-    )
-  ) %>%
+  )) %>% 
+  # transmute(
+  #   clean.guest = str_replace_all(
+  #     string = clean.guest,
+  #     pattern = "\\([di]*[mono]*anion\\)",
+  #     replacement = ""
+  #   )
+  # ) %>%
   transmute(
     clean.guest = str_replace_all(
       string = clean.guest,
       pattern = "\\s*derivative\\s*(\\(E*Z*\\))*(cis)?(trans)?\\-*[0-9]*",
       replacement = ""
     )
-  ) %>%
+  ) %>%select(guest, clean.guest) %>% unique() %>% View()
   transmute(
     clean.guest = str_replace_all(
       string = clean.guest,
@@ -127,15 +122,15 @@ ri_engineered <- ri_clean %>%
       replacement = "hydrochloride"
     )
   ) %>%
-  transmute(clean.guest = str_replace_all(
-    string = clean.guest,
-    pattern = gsub(
-      pattern = "\\n",
-      replacement = "",
-      x = "\\(\\-*\\±*[0-9A-Z]*\\,*[0-9A-Z]*\\)\\-\\(*\\+*\\-*\\)*\\-*|nor(?!t)|\\([a-z]*\\,*\\s*[a-z]*(I[0-9]\\-)*\\)"
-    ),
-    replacement = ""
-  )) %>%
+  # transmute(clean.guest = str_replace_all(
+  #   string = clean.guest,
+  #   pattern = gsub(
+  #     pattern = "\\n",
+  #     replacement = "",
+  #     x = "\\(\\-*\\±*[0-9A-Z]*\\,*[0-9A-Z]*\\)\\-\\(*\\+*\\-*\\)*\\-*|nor(?!t)|\\([a-z]*\\,*\\s*[a-z]*(I[0-9]\\-)*\\)"
+  #   ),
+  #   replacement = ""
+  # )) %>%
   transmute(clean.guest = str_replace_all(
     string = clean.guest,
     pattern = "\\β",
@@ -146,13 +141,13 @@ ri_engineered <- ri_clean %>%
     pattern = "\\α",
     replacement = "alpha"
   )) %>%
-  transmute(
-    clean.guest = str_replace(
-      string = clean.guest,
-      pattern = "cis\\-|trans\\-|\\((?=\\[)",
-      replacement = ""
-    )
-  ) %>%
+  # transmute(
+  #   clean.guest = str_replace(
+  #     string = clean.guest,
+  #     pattern = "cis\\-|trans\\-|\\((?=\\[)",
+  #     replacement = ""
+  #   )
+  # ) %>%
   transmute(clean.guest = str_replace(
     string = clean.guest,
     pattern = "HCl",
@@ -163,13 +158,13 @@ ri_engineered <- ri_clean %>%
     pattern = "H2SO4",
     replacement = "sulfonate"
   )) %>%
-  transmute(
-    clean.guest = str_replace(
-      string = clean.guest,
-      pattern = "\\s[0-9]+[a-z]$|\\s[A-Z][0-9]",
-      replacement = ""
-    )
-  ) %>%
+  # transmute(
+  #   clean.guest = str_replace(
+  #     string = clean.guest,
+  #     pattern = "\\s[0-9]+[a-z]$|\\s[A-Z][0-9]",
+  #     replacement = ""
+  #   )
+  # ) %>%
   tbl_df() %>%
   bind_cols(ri_clean) %>%
   select(2:3, 1, everything())
@@ -185,3 +180,8 @@ save(ri_engineered, file = paste0(clean_dir, "ri_engineered.RData"))
 ri_clean[ , 6:15] <- ri_clean%>%
         select(pH:TDelS.Uncertainty) %>%
         lapply(destring)
+
+#SREP LAB is my own personal file
+
+saveRDS(object = ri_clean, file = "./Output Data/02-ri_clean.rds")
+save(ri_clean, file = "./Output Data/02-ri_clean.RData")
