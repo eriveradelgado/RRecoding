@@ -110,18 +110,18 @@ ri_clean$pH[hcl_acid]  <-  1.21
 # and was able to find many   of the structures without modifying the original 
 # name. Maybe a guest.special.cases column could be more useful - ERD
 # 
-# ri_engineered <- ri_clean %>%
+ri_clean <- ri_clean %>%
 #   mutate(clean.guest = str_replace_all(
 #     string = guest,
 #     pattern = "\\·+\\s*[A-Z]*[a-z]*",
 #     replacement = ""
 #   )) %>% 
-#   mutate(
-#     clean.guest = str_replace_all(
-#       string = clean.guest,
-#       pattern = "[0-9]HCl",
-#       replacement = "hydrochloride"
-#     )
+  # mutate(
+  #   clean.guest = str_replace_all(
+  #     string = clean.guest,
+  #     pattern = "[0-9]HCl",
+  #     replacement = "hydrochloride"
+  #   )
 #   ) %>%
 #   mutate(clean.guest = str_replace_all(
 #     string = clean.guest,
@@ -133,12 +133,12 @@ ri_clean$pH[hcl_acid]  <-  1.21
 #     pattern = "\\α",
 #     replacement = "alpha"
 #   )) %>%
-# 
-#   mutate(clean.guest = str_replace(
-#     string = clean.guest,
-#     pattern = "HCl",
-#     replacement = "hydrochloride"
-#   )) %>%
+
+  mutate(guest = str_replace(
+    string = guest,
+    pattern = "HCl",
+    replacement = "hydrochloride"
+  )) #  %>%
 #   mutate(clean.guest = str_replace(
 #     string = clean.guest,
 #     pattern = "H2SO4",
