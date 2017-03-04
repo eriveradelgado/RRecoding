@@ -37,10 +37,20 @@ predict(glm.model, test[,-1:-2]) %>%
 
 ri.padel.bpredictors.2 <-  ri.padel %>%
   filter(host == "Beta-CD") %>% 
-  filter(!is.na(log.K)) %>%
-  select(-X1:-log.K.Uncertainty, log.K.Uncertainty:-`bind.aff, kcal/mol`)
-
-x2 <- ri.padel.bpredictors %>% select(2:2757) %>% data.matrix()
-yy <- ri.padel.bpredictors %>% select(1) %>% data.matrix()
+  filter(!is.na(DelG)) %>%
+  select(-X1:-log.K.Uncertainty, -DelG.Uncertainty:-`bind.aff, kcal/mol`)
 
 sparse.ri.2 <- sparse.model.matrix(~., ri.padel.bpredictors.2)
+
+train.2 <- sparse.ri.2[train.index,]
+test.2 <- sparse.ri.2[-train.index,]
+
+glm.model.2 <- cv.glmnet(x = train.2[,-1:-2], y = train.2[, 2])
+predict(glm.model.2, test.2[,-1:-2]) %>% 
+  cbind(test.2[,2]) %>% 
+  data.frame() %>% 
+  rename(predicted = X1, experimental = V2) %>%
+  ggplot(., aes(x = experimental, y = predicted))+
+  geom_point()+
+  geom_abline(slope = 1, intercept = 0)
+
