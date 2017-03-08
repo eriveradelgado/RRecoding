@@ -1,7 +1,7 @@
 library(readr)
-library(data.table)
-library(corrplot)
-library(doMC)
+library(glmnet)
+library(tidyverse)
+library(caret)
 
 ri.padel <- read_csv("../Dropbox/RStudio/RRecoding/03-PaDEL-Descriptor and Rekharsky and Inoue.csv")
 
@@ -17,6 +17,7 @@ ri.padel.bthermodynamics <-  ri.padel %>%
 
 sparse.ri <- sparse.model.matrix(~., ri.padel.bpredictors)
 
+set.seed(1001)
 train.index <- sample(x = 1:nrow(sparse.ri), size = round(0.75*nrow(sparse.ri)))
 
 train <- sparse.ri[train.index,]
